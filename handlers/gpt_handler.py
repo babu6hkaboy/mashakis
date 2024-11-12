@@ -1,5 +1,6 @@
 import openai
 from config import OPENAI_API_KEY, OPENAI_MODEL
+from handlers.telegram_notifier import send_telegram_notification_to_channel
 from utils.data_loader import load_context
 from utils.logger import logger
 
