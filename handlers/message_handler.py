@@ -1,7 +1,7 @@
 import requests
 from config import PAGE_ACCESS_TOKEN
 from handlers.gpt_handler import generate_response
-from handlers.telegram_notifier import send_telegram_notification
+from handlers.telegram_notifier import send_telegram_notification_to_channel
 from handlers.database import save_client_message
 from utils.logger import logger
 
@@ -16,16 +16,22 @@ def handle_message(data):
             if message_text:
                 logger.info(f"Message from {sender_id}: {message_text}")
 
-                # Сохранение сообщения в базе данных
+                # Сохранение сообщения клиента в базе данных
                 save_client_message(sender_id, message_text)
 
-                # Генерация ответа с помощью ChatGPT
+                # Генерация ответа ассистента с помощью ChatGPT
                 bot_response = generate_response(sender_id, message_text)
 
                 # Отправка ответа клиенту
                 send_message(sender_id, bot_response)
+
+                # Проверка наличия фразы в ответе ассистента
+                trigger_phrase = "I will pass the information to the manager and she will come back to you as soon as possible"
+                if trigger_phrase in bot_response:
+                    # Клиент нецелевой, отправляем уведомление в Telegram-канал
+                    send_telegram_notification_to_channel(sender_id, message_text)
             else:
-                # Обработка других типов сообщений (например, вложений)
+                # Обработка не текстовых сообщений
                 send_message(sender_id, "Извините, я могу обрабатывать только текстовые сообщения.")
 
 def send_message(recipient_id, message_text):
