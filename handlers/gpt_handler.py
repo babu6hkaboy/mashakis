@@ -7,8 +7,13 @@ openai.api_key = OPENAI_API_KEY
 
 def generate_response(user_id, user_message):
     context = load_context(user_id)
+    assistant_instructions = (
+        "If you are unable to assist the client with their request, "
+        "please respond with the following phrase exactly: "
+        "'I will pass the information to the manager and she will come back to you as soon as possible'"
+    )
     messages = [
-        {"role": "system", "content": context},
+        {"role": "system", "content": assistant_instructions + "\n" + context},
         {"role": "user", "content": user_message}
     ]
     try:
@@ -22,7 +27,6 @@ def generate_response(user_id, user_message):
         return bot_message
     except Exception as e:
         logger.error(f"Error generating response: {e}")
-        # Уведомляем владельца о проблеме
-        from handlers.telegram_notifier import send_telegram_notification
-        send_telegram_notification(user_id, user_message)
+        # Отправляем уведомление в Telegram-канал
+        send_telegram_notification_to_channel(user_id, user_message)
         return "Извините, возникла техническая неполадка. Мы свяжемся с вами в ближайшее время."
