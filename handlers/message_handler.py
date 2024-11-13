@@ -5,7 +5,7 @@ from handlers.database import save_client_message
 from utils.logger import logger
 
 # Укажите Page Access Token напрямую
-PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBOwW8oPWcjfeRz1Ab1SbonKBRH2iXgMu5ETPfqDJJaQ8vZAomNtsrFHPSQJ5bVelo8eMjp4yUerQZClrvgTr6ClDzKDa5kIzkX2FJadmSfyoHmCUQApYeyOOsp0GLqHKV0oUPDYmHLKmu0ii9I9JEtEG8X0F56ZBWTqIjSLJ8AaqpUoRRQAL"
+PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO56pyfTAboXhL8SwcFQpi5NhitfPckvkInLpKU8lbbe0q8R3PSmRp8FIabOKlQe1euPnwJNLGGAKj7sZAdyFBFZAEsrm9ZCBkm6olaALHLh6jhWjfeetAZBI7gQEC7e0oqLznwkZCMY1IQ6pHzSZA3ZABZCGNqnjH18k72LGF6QRMPGUkrp8P2yn"
 
 def handle_message(data):
     """Обрабатывает входящее сообщение от Messenger"""
