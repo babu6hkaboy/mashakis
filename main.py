@@ -9,7 +9,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = os.getenv('VERIFY_TOKEN', '5828e1ca-816f-41b5-8194-4ff7cd2239cb')  # Убедитесь, что VERIFY_TOKEN правильный
+VERIFY_TOKEN = os.getenv('VERIFY_TOKEN', '1e9f4858-5058-434b-a778-3ec8d9701ab8')  # Убедитесь, что VERIFY_TOKEN правильный
 
 @app.route('/')
 def home():
