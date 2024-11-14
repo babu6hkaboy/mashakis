@@ -10,7 +10,8 @@ TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHANNEL_ID = os.getenv('TELEGRAM_CHANNEL_ID')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 OPENAI_ASSISTANT_ID = "asst_TW9TT4zLgdNEKlAEMlpKNH4x"
-
+OPENAI_PROJECT_ID = "proj_a2b7dZjMYCxcQmn6j7exH4iq"
+OPENAI_ORGANIZATION = "org-h9qd17qCN4hnixxx3p2KoPfX"
 
 # Настройки базы данных MySQL
 DB_USER = os.getenv('DB_USER')
