@@ -25,7 +25,7 @@ def handle_message(data):
                 logger.info(f"Сообщение от {sender_id} сохранено в базе данных.")
 
                 # Генерация ответа ассистента с помощью ChatGPT
-                bot_response = generate_response(sender_id, message_text)
+                bot_response = generate_response(message_text)
                 logger.info(f"Сгенерированный ответ ассистента: {bot_response}")
 
                 # Отправка ответа клиенту
