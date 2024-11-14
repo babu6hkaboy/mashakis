@@ -1,5 +1,5 @@
 import openai
-from config import OPENAI_API_KEY, OPENAI_ORGANIZATION, ASSISTANT_ID
+from config import OPENAI_API_KEY, OPENAI_ORGANIZATION, OPENAI_ASSISTANT_ID
 from utils.logger import logger
 
 # Устанавливаем API-ключ и организацию
@@ -10,7 +10,7 @@ def generate_response(user_message):
     try:
         # Создаем запрос к ассистенту, используя assistant_id
         response = openai.ChatCompletion.create(
-            assistant_id=ASSISTANT_ID,
+            assistant_id=OPENAI_ASSISTANT_ID,
             messages=[
                 {"role": "user", "content": user_message}
             ]
