@@ -1,15 +1,16 @@
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 import os
-from handlers.message_handler import handle_message  # Импорт функции handle_message
+import logging
+from handlers.openai_assistant import get_assistant_response  # Импорт функции взаимодействия с OpenAI
 from utils.logger import logger
 
-# Загрузите переменные окружения из .env, если используется
+# Загрузка переменных окружения из .env файла
 load_dotenv()
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = os.getenv('VERIFY_TOKEN', '1e9f4858-5058-434b-a778-3ec8d9701ab8')  # Убедитесь, что VERIFY_TOKEN правильный
+VERIFY_TOKEN = os.getenv('VERIFY_TOKEN', '1e9f4858-5058-434b-a778-3ec8d9701ab8')
 
 @app.route('/')
 def home():
@@ -18,7 +19,7 @@ def home():
 @app.route('/webhook', methods=['GET', 'POST'])
 def webhook():
     if request.method == 'GET':
-        # Проверка токена от Facebook
+        # Валидация токена для Facebook
         verify_token = request.args.get('hub.verify_token')
         challenge = request.args.get('hub.challenge')
         if verify_token == VERIFY_TOKEN:
@@ -30,10 +31,23 @@ def webhook():
         data = request.get_json()
         logger.info(f"Полученные данные от Messenger: {data}")
 
-        # Вызов функции handle_message для обработки сообщения
-        handle_message(data)
+        # Извлечение ID отправителя и текста сообщения
+        sender_id = data['entry'][0]['messaging'][0]['sender']['id']
+        user_message = data['entry'][0]['messaging'][0]['message']['text']
+        
+        # Вызов функции для получения ответа ассистента
+        chat_history = [{"role": "user", "content": user_message}]  # Если нужно, добавьте историю сообщений
+        assistant_reply = get_assistant_response(user_message, chat_history)
+        logger.info(f"Ответ ассистента: {assistant_reply}")
 
-        return 'EVENT_RECEIVED', 200
+        # Формирование ответа для отправки обратно в Messenger
+        response_data = {
+            "recipient": {"id": sender_id},
+            "message": {"text": assistant_reply}
+        }
+
+        # Возвращаем подтверждение
+        return jsonify(response_data), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
