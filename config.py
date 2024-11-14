@@ -24,3 +24,5 @@ DATABASE_URI = f'mysql+pymysql://gen_user:%2Es%5C%7BNYp_G%7D9TUN@185.119.59.113:
 
 # Настройки OpenAI API
 OPENAI_MODEL = 'gpt-3.5-turbo'
+
+#0
