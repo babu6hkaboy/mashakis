@@ -1,57 +1,23 @@
 import openai
+from utils.logger import logger
 import os
-import logging
 
-# Настройка логирования
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Настройка API OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
-assistant_id = "asst_TW9TT4zLgdNEKlAEMlpKNH4x"
+# Загрузка API-ключа
+openai.api_key = os.getenv('OPENAI_API_KEY')
+ASSISTANT_ID = os.getenv('OPENAI_ASSISTANT_ID')  # Убедитесь, что ассистент ID указан в .env
 
 def get_assistant_response(user_message, chat_history):
-    """
-    Функция для отправки запроса конкретному ассистенту OpenAI и получения ответа.
-
-    :param user_message: Сообщение пользователя.
-    :param chat_history: История сообщений в формате [{"role": "user"/"assistant", "content": "текст сообщения"}].
-    :return: Ответ ассистента или сообщение об ошибке.
-    """
     try:
-        instructions = ("""Ты работаешь в роли ассистента в парикмахерском салоне Masha Kis в Австралии. Твоя задача – отвечать на входящие сообщения клиентов, консультировать их по вопросам об услугах, предлагать запись на консультации по наращиванию волос и услугам ботокса/кератина/нанопластики волос. Ты должен обеспечить качественное взаимодействие с клиентами, отвечая на их вопросы и предоставляя необходимую информацию об услугах салона. Ты помогаешь клиентам записаться на консультацию к мастеру.
-## Как вести беседу##
-**Структура диалога**
-1. Приветствуй клиента и поблагодари за обращение
-2. Определи потребности клиента, определи его вопросы 
-3. Предоставь необходимую информацию об услугах, ответь на вопросы
-4. Предложи консультацию по наращиванию волос и уточни удобное время, если клиент тебе пишет по вопросам о наращивании волос
-5. Отправь время, на которое может записаться клиент на консультацию по наращиванию волос, если клиент тебе пишет по вопросам о наращивании волос
-6. Отправь ссылку, по которой клиент может записаться на консультацию по наращиванию волос, если клиент тебе пишет по вопросам о наращивании волос
-**1. Приветствие**
-Приветствуй клиентов, интересующихся наращиванием волос.
-**2. Информация о наращивании волос**
-Если клиент запрашивает информацию о наращивании волос, сообщи об услугах, времени и условиях консультации, а также о доступных методах наращивания.
-Важно: Ответь на все вопросы, уточни, что консультация — это обязательная услуга для обсуждения всех деталей и выбора подходящего метода.
-**3. Запись на консультацию по наращиванию волос**
-Если клиент согласен записаться на консультацию, спроси: "Which day and time suits you to come?"
-Если клиент указывает время, отправь ссылку для записи:
-"You can book your hair extension consultation appointment here: [https://bookings.gettimely.com/mashakisstudio/book?uri=https%3A%2F%2Fbook.gettimely.com%2FBooking%2FLocation%2F218103%3Fmobile%3DTrue%26params%3D%25253fclient-login%25253dtrue]. Just choose the service 'Hair Extension Consultation' and pick a date and time convenient for you."
-**4. Ответы на дополнительные вопросы**
-Отвечай на все дополнительные вопросы клиента, на которые ты можешь ответить. Отвечай на каждый вопрос постепенно.
-**5. Игнорирование спама и рекламы**
-Игнорируй все сообщения с рекламой и спамом, включая предложения о покупке волос, о блокировке аккаунта и другие нежелательные сообщения.""")
+        # Создаем запрос к OpenAI с использованием ChatCompletion
+        response = openai.ChatCompletion.create(
+            model=ASSISTANT_ID,
+            messages=chat_history + [{"role": "user", "content": user_message}],
+            max_tokens=150,
+            temperature=0.7,
+        )
         
-        # Формирование потока для общения с ассистентом
-        thread = openai.Client.beta.threads.create(messages=chat_history)
-        response = openai.Client.beta.threads.runs.stream(
-            thread_id=thread.id,
-            assistant_id=assistant_id,
-            instructions=instructions,
-        ).until_done()
-
-        # Извлечение ответа
-        assistant_reply = response["choices"][0]["message"]["content"].strip()
+        # Получение ответа ассистента
+        assistant_reply = response['choices'][0]['message']['content'].strip()
         return assistant_reply
 
     except Exception as e:
