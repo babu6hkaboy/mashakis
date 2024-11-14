@@ -7,7 +7,7 @@ from utils.logger import logger
 openai.api_key = OPENAI_API_KEY
 
 def generate_response(user_id, user_message):
-    context = load_context(user_id, user_message)
+    context = load_context(user_id)
     assistant_instructions = (
         "If you are unable to assist the client with their request, "
         "please respond with the following phrase exactly: "
