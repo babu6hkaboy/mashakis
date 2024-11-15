@@ -7,7 +7,7 @@ import string
 from contextlib import redirect_stdout
 from openai import Client, AssistantEventHandler
 from dotenv import load_dotenv
-from database import save_client_message, get_client_messages
+from handlers.database import save_client_message, get_client_messages
 
 # Загрузка переменных окружения
 load_dotenv()
