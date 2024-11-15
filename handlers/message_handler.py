@@ -1,47 +1,38 @@
 import requests
-from handlers.gpt_handler import generate_response
+from handlers.gpt_handler import chat_with_assistant
 from handlers.telegram_notifier import send_telegram_notification_to_channel
 from handlers.database import save_client_message
 from utils.logger import logger
+from handlers.gpt_handler import chat_with_assistant
+from database import save_client_message
+import asyncio
 
 # Укажите Page Access Token напрямую
 PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO56pyfTAboXhL8SwcFQpi5NhitfPckvkInLpKU8lbbe0q8R3PSmRp8FIabOKlQe1euPnwJNLGGAKj7sZAdyFBFZAEsrm9ZCBkm6olaALHLh6jhWjfeetAZBI7gQEC7e0oqLznwkZCMY1IQ6pHzSZA3ZABZCGNqnjH18k72LGF6QRMPGUkrp8P2yn"
 
+
+
 def handle_message(data):
-    """Обрабатывает входящее сообщение от Messenger"""
-    logger.info("Начало обработки сообщения...")  # Логирование начала обработки
-    # Извлечение информации из входящего сообщения
-    messaging_events = data['entry'][0]['messaging']
-    for event in messaging_events:
-        if 'message' in event:
-            sender_id = event['sender']['id']
-            message_text = event['message'].get('text')
+    try:
+        for entry in data.get('entry', []):
+            for messaging in entry.get('messaging', []):
+                sender_id = messaging['sender']['id']
+                user_message = messaging['message']['text']
 
-            if message_text:
-                logger.info(f"Сообщение от {sender_id}: {message_text}")
+                # Логируем входящее сообщение
+                logger.info(f"Сообщение от {sender_id}: {user_message}")
 
-                # Сохранение сообщения клиента в базе данных
-                save_client_message(sender_id, message_text)
-                logger.info(f"Сообщение от {sender_id} сохранено в базе данных.")
+                # Получаем ответ от ассистента
+                assistant_reply = asyncio.run(chat_with_assistant(sender_id, user_message))
 
-                # Генерация ответа ассистента с помощью ChatGPT
-                bot_response = generate_response(message_text, sender_id)
-                logger.info(f"Сгенерированный ответ ассистента: {bot_response}")
+                # Логируем ответ ассистента
+                logger.info(f"Ответ ассистента: {assistant_reply}")
 
-                # Отправка ответа клиенту
-                response_data = send_message(sender_id, bot_response)
-                logger.info(f"Ответ от Facebook API: {response_data}")
+                # Отправляем ответ пользователю через Messenger API
+                send_message(sender_id, assistant_reply)
 
-                # Проверка наличия триггерной фразы в ответе ассистента
-                trigger_phrase = "I will pass the information to the manager and she will come back to you as soon as possible"
-                if trigger_phrase in bot_response:
-                    # Клиент нецелевой, отправляем уведомление в Telegram-канал
-                    logger.info(f"Триггерная фраза найдена, отправка уведомления в Telegram для {sender_id}")
-                    send_telegram_notification_to_channel(sender_id, message_text)
-            else:
-                # Обработка не текстовых сообщений
-                logger.warning(f"Не текстовое сообщение от {sender_id}")
-                send_message(sender_id, "Извините, я могу обрабатывать только текстовые сообщения.")
+    except Exception as e:
+        logger.error(f"Ошибка при обработке сообщения: {e}")
 
 def send_message(recipient_id, message_text):
     """Отправляет сообщение клиенту через Messenger API"""
