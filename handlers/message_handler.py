@@ -29,6 +29,14 @@ def handle_message(data):
                 # Логирование ответа ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
 
+                # Проверяем необходимость отправки уведомления в Telegram
+                trigger_words = {"Please", "give", "manager", "information", "minutes"}
+                if any(word.lower() in assistant_reply.lower() for word in trigger_words):
+                    logger.info("Обнаружены триггерные слова. Отправляем уведомление в Telegram.")
+                    send_telegram_notification_to_channel(sender_id, assistant_reply)
+                else:
+                    logger.info("Триггерные слова не найдены. Уведомление в Telegram не отправлено.")
+
                 # Отправка ответа клиенту
                 send_message(sender_id, assistant_reply)
     except Exception as e:

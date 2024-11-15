@@ -55,21 +55,36 @@ def should_notify(response_text):
     return match_count >= MIN_MATCH_COUNT
 
 def send_telegram_notification_to_channel(user_id, message_text):
-    """Отправка уведомления о новом сообщении в Telegram канал."""
-    user_name = get_user_name(user_id)  # Получаем Имя и Фамилию
-    text = f"Новое сообщение от пользователя {user_name}:\n{message_text}"
-    
-    url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
-    data = {
-        'chat_id': TG_CHANNEL_ID,
-        'text': text
-    }
-
-    logger.info(f"Отправка уведомления в Telegram канал с данными: {data}")
-
     try:
+        # Получение имени пользователя
+        user_name = get_user_name(user_id)  # Может вернуть "Неизвестный пользователь"
+        if not user_name:
+            logger.warning(f"Имя пользователя не найдено для user_id={user_id}. Используем значение по умолчанию.")
+            user_name = "Неизвестный пользователь"
+
+        # Формирование текста уведомления
+        text = f"Новое сообщение от пользователя {user_name}:\n{message_text}"
+        logger.info(f"Подготовка текста для Telegram уведомления: {text}")
+
+        # URL и данные для запроса
+        url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
+        data = {
+            'chat_id': TG_CHANNEL_ID,
+            'text': text
+        }
+
+        # Логируем данные перед отправкой
+        logger.info(f"Отправка уведомления в Telegram канал: {data}")
+
+        # Выполняем запрос
         response = requests.post(url, json=data)
-        response.raise_for_status()
-        logger.info("Telegram notification sent to channel successfully")
-    except requests.exceptions.RequestException as e:
+
+        # Проверка ответа
+        if response.status_code == 200:
+            logger.info("Уведомление в Telegram канал успешно отправлено")
+        else:
+            logger.error(f"Ошибка при отправке уведомления в Telegram канал: {response.status_code} - {response.text}")
+
+    except Exception as e:
         logger.error(f"Ошибка при отправке уведомления в Telegram: {e}")
+
