@@ -40,14 +40,11 @@ def trim_history(history, max_length):
     return history[-max_length:]
 
 def chat_with_assistant_sync(user_id, user_message):
-    """Синхронная версия общения с ассистентом."""
-    from openai import Client, AssistantEventHandler
-
     # Получаем историю сообщений из базы данных
     messages_from_db = get_client_messages(user_id)
     history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
 
-    # Добавляем текущее сообщение пользователя в историю
+    # Добавляем сообщение пользователя в историю
     history.append({'role': 'user', 'content': user_message})
     history = trim_history(history, MAX_HISTORY_LENGTH)
 
@@ -55,22 +52,23 @@ def chat_with_assistant_sync(user_id, user_message):
     save_client_message(user_id, user_message)
 
     # Инструкции для ассистента
-    instructions = """for response use Vector storage vs_0hNEhbi3HK9PGoml8hXQIqfl"""
+    instructions = "for response use Vector storage vs_0hNEhbi3HK9PGoml8hXQIqfl"
 
     try:
-        # Создаём поток и запускаем ассистента
+        # Запуск ассистента
         thread = client.beta.threads.create(messages=history)
-        response = client.beta.threads.runs.create(
+        run = client.beta.threads.runs.create(
             thread_id=thread.id,
-            assistant_id='asst_XxjfUuLuPLYkD8mt6uUdpqQt',
+            assistant_id="asst_XxjfUuLuPLYkD8mt6uUdpqQt",
             instructions=instructions,
         )
+        
+        # Получение содержимого ответа
+        bot_response = run.message.content  # Исправленный способ доступа к ответу
 
         # Сохраняем ответ ассистента в базу данных
-        assistant_message = response['messages'][0]['content']
-        save_client_message(user_id, assistant_message)
-
-        return assistant_message
+        save_client_message(user_id, bot_response)
+        return bot_response
 
     except Exception as e:
         logger.error(f"Ошибка при общении с ассистентом: {e}")
