@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
-import asyncio  
+import asyncio
 
 load_dotenv()
 
@@ -18,8 +18,12 @@ def home():
 def webhook():
     data = request.get_json()
     logger.info(f"Полученные данные от Messenger: {data}")
+
+    # Асинхронный запуск
     asyncio.run(handle_message(data))
-    return "EVENT_RECEIVED", 200
+
+    return 'EVENT_RECEIVED', 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
