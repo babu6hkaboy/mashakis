@@ -40,39 +40,35 @@ def trim_history(history, max_length):
     return history[-max_length:]
 
 def chat_with_assistant_sync(user_id, user_message):
-    # Получаем историю сообщений из базы данных
+    """Синхронное общение с ассистентом"""
+    # Получение истории сообщений
     messages_from_db = get_client_messages(user_id)
     history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
 
-    # Добавляем сообщение пользователя в историю
+    # Добавляем новое сообщение в историю
     history.append({'role': 'user', 'content': user_message})
     history = trim_history(history, MAX_HISTORY_LENGTH)
 
     # Сохраняем сообщение пользователя в базу данных
     save_client_message(user_id, user_message)
 
-    # Инструкции для ассистента
-    instructions = ""
-
     try:
-        # Создание потока и запуск ассистента
+        # Создаём поток (thread) и запускаем диалог
         thread = client.beta.threads.create(messages=history)
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
-            assistant_id="asst_XxjfUuLuPLYkD8mt6uUdpqQt",
-            instructions=instructions,
+            assistant_id="asst_XxjfUuLuPLYkD8mt6uUdpqQt",  # Ваш ID ассистента
         )
-        
-        # Логируем структуру объекта run
+
+        # Логируем объект Run для анализа
         logger.info(f"Run object: {run}")
 
-        # Проверяем доступные атрибуты объекта run
-        if hasattr(run, "content"):
-            bot_response = run.content  # Попробуйте получить контент из атрибута content
-        elif hasattr(run, "choices") and run.choices:
-            bot_response = run.choices[0].text  # Если возвращается список вариантов
+        # Извлечение ответа из объекта Run
+        if hasattr(run, 'message') and run.message:
+            bot_response = run.message['content']
         else:
-            raise ValueError("Ответ ассистента пуст или имеет неизвестный формат.")
+            logger.error(f"Ошибка: Не удалось извлечь ответ из объекта Run: {run}")
+            bot_response = "Произошла ошибка. Попробуйте снова."
 
         # Сохраняем ответ ассистента в базу данных
         save_client_message(user_id, bot_response)
@@ -81,3 +77,4 @@ def chat_with_assistant_sync(user_id, user_message):
     except Exception as e:
         logger.error(f"Ошибка при общении с ассистентом: {e}")
         return "Произошла ошибка. Попробуйте снова."
+
