@@ -23,6 +23,9 @@ def handle_message(data):
                 # Логирование перед вызовом
                 logger.info(f"Передача аргументов в chat_with_assistant: user_id={sender_id}, user_message={user_message}")
 
+                # Отправляем уведомление о сообщении пользователя в Telegram
+                send_telegram_notification_to_channel(sender_id, user_message)
+
                 # Передаём client в функцию
                 assistant_reply = asyncio.run(chat_with_assistant(client, sender_id, user_message))
 
@@ -41,6 +44,7 @@ def handle_message(data):
                 send_message(sender_id, assistant_reply)
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
+
 
 
 
