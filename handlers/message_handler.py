@@ -23,20 +23,17 @@ def handle_message(data):
                 # Логирование перед вызовом
                 logger.info(f"Передача аргументов в chat_with_assistant: user_id={sender_id}, user_message={user_message}")
 
-                # Отправляем уведомление в Telegram только для пользовательского сообщения
-                send_telegram_notification_to_channel(sender_id, user_message)
-
                 # Передаём client в функцию
                 assistant_reply = asyncio.run(chat_with_assistant(client, sender_id, user_message))
 
                 # Логирование ответа ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
 
-                # Проверяем необходимость отправки уведомления в Telegram для ответа ассистента
-                trigger_words = {"Please", "give", "manager", "information", "minutes"}
-                if any(word.lower() in assistant_reply.lower() for word in trigger_words):
+                # Проверяем необходимость отправки уведомления в Telegram
+                trigger_words = {"please", "give", "manager", "information", "minutes"}
+                if any(word in assistant_reply.lower() for word in trigger_words):
                     logger.info("Обнаружены триггерные слова в ответе ассистента. Отправляем уведомление в Telegram.")
-                    send_telegram_notification_to_channel(sender_id, assistant_reply)
+                    send_telegram_notification_to_channel(sender_id, user_message)  # Отправляем последнее сообщение пользователя
                 else:
                     logger.info("Триггерные слова в ответе ассистента не найдены. Уведомление в Telegram не отправлено.")
 
@@ -44,6 +41,7 @@ def handle_message(data):
                 send_message(sender_id, assistant_reply)
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
+
 
 
 
