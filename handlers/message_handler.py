@@ -1,10 +1,9 @@
 import requests
 from handlers.gpt_handler import chat_with_assistant
 from handlers.telegram_notifier import send_telegram_notification_to_channel
-from handlers.database import save_client_message
+from handlers.database import save_client_message, get_client_messages
 from utils.logger import logger
 from handlers.gpt_handler import chat_with_assistant
-from database import save_client_message
 import asyncio
 
 # Укажите Page Access Token напрямую
