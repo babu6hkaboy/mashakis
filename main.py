@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
+import asyncio  
 
 load_dotenv()
 
