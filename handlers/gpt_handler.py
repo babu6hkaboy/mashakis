@@ -27,6 +27,10 @@ client = Client(api_key=openai_api_key)
 # Максимальное количество сообщений в истории
 MAX_HISTORY_LENGTH = 10
 
+# Генерация уникального chat_id
+def generate_chat_id():
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
 # Класс для обработки событий ассистента
 class EventHandler(AssistantEventHandler):
     def on_text_created(self, text) -> None:
@@ -39,40 +43,44 @@ class EventHandler(AssistantEventHandler):
 def trim_history(history, max_length):
     return history[-max_length:]
 
-import logging
-from openai import OpenAI
+# Асинхронная функция для общения с ассистентом
+async def chat_with_assistant(client, user_id, user_message):
+    # Получаем историю сообщений пользователя из базы данных
+    messages_from_db = get_client_messages(user_id)
+    history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
 
-# Настраиваем логирование
-logger = logging.getLogger("beauty_salon_chatbot")
+    # Добавляем сообщение пользователя в историю
+    history.append({'role': 'user', 'content': user_message})
+    history = trim_history(history, MAX_HISTORY_LENGTH)
 
-# Функция для обработки ответа ассистента
-def get_response_from_assistant(history, assistant_id, client):
+    # Сохраняем сообщение пользователя в базу данных
+    save_client_message(user_id, user_message)
+
+    # Инструкции для ассистента
+    instructions = """Инструкция"""
+
     try:
-        # Создание потока сообщений
-        logger.info("Создание нового потока сообщений...")
-        thread = client.beta.threads.create(messages=history)
-        logger.info(f"Созданный поток: {thread}")
+        # Создаём поток и запускаем ассистента
+        f = io.StringIO()
+        with redirect_stdout(f):
+            thread = client.beta.threads.create(messages=history)
+            with client.beta.threads.runs.stream(
+                thread_id=thread.id,
+                assistant_id='asst_XxjfUuLuPLYkD8mt6uUdpqQt',
+                instructions=instructions,
+                event_handler=EventHandler()
+            ) as stream:
+                stream.until_done()
 
-        # Запуск диалога с ассистентом
-        logger.info("Запуск диалога с ассистентом...")
-        run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
-        logger.info(f"Объект Run: {run}")
+        # Чистим вывод от метаданных
+        full_output = f.getvalue()
+        cleaned_output = re.sub(r"assistant > Text\(.*?\)", "", full_output).strip()
 
-        # Проверка наличия ответа
-        if hasattr(run, 'message') and 'content' in run.message:
-            bot_response = run.message['content']
-        else:
-            logger.error(f"Ошибка: Ответ ассистента пуст или имеет неизвестный формат. Run: {run}")
-            bot_response = "Произошла ошибка. Попробуйте снова."
+        # Сохраняем ответ ассистента в базу данных
+        save_client_message(user_id, cleaned_output)
 
-        # Логирование ответа ассистента
-        logger.info(f"Ответ ассистента: {bot_response}")
-
-        return bot_response
+        return cleaned_output
 
     except Exception as e:
-        # Логирование ошибки
-        logger.error(f"Ошибка при общении с ассистентом: {e}")
+        logger.error(f"Ошибка: {e}")
         return "Произошла ошибка. Попробуйте снова."
-
-
