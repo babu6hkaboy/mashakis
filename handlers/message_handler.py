@@ -10,7 +10,7 @@ PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO56pyfTAboXhL8SwcFQpi5NhitfPckvkInLpKU8lbbe0q8
 
 
 
-def handle_message(data):
+def handle_message(data, client):
     try:
         entry = data['entry'][0]
         messaging = entry['messaging'][0]
@@ -21,7 +21,7 @@ def handle_message(data):
         logger.info(f"Сообщение от {sender_id}: {message_text}")
 
         # Генерация ответа
-        bot_response = get_response_from_assistant(sender_id, message_text)  # Синхронная версия
+        bot_response = get_response_from_assistant(client, sender_id, message_text)  # Синхронная версия
         logger.info(f"Ответ ассистента: {bot_response}")
 
         # Отправка сообщения клиенту
