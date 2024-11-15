@@ -10,7 +10,7 @@ PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO56pyfTAboXhL8SwcFQpi5NhitfPckvkInLpKU8lbbe0q8
 
 
 
-def handle_message(data, client):
+def handle_message(data):
     try:
         entry = data['entry'][0]
         messaging = entry['messaging'][0]
@@ -20,14 +20,15 @@ def handle_message(data, client):
 
         logger.info(f"Сообщение от {sender_id}: {message_text}")
 
-        # Генерация ответа
-        bot_response = get_response_from_assistant(client, sender_id, message_text)
+        # Генерация ответа через OpenAI
+        bot_response = get_response_from_assistant(sender_id, message_text)  # Вызов вашей функции
         logger.info(f"Ответ ассистента: {bot_response}")
 
-        # Отправка сообщения клиенту
+        # Отправка ответа через Messenger API
         send_message(sender_id, bot_response)
     except Exception as e:
         logger.error(f"Ошибка в handle_message: {e}")
+        raise
 
 
     
