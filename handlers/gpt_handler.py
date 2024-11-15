@@ -39,16 +39,15 @@ class EventHandler(AssistantEventHandler):
 def trim_history(history, max_length):
     return history[-max_length:]
 
-# Асинхронная функция для общения с ассистентом
-async def chat_with_assistant(user_id, user_message):
-    if not user_message.strip():
-        return "Ваше сообщение пустое. Пожалуйста, введите текст."
+def chat_with_assistant_sync(user_id, user_message):
+    """Синхронная версия общения с ассистентом."""
+    from openai import Client, AssistantEventHandler
 
-    # Получаем историю сообщений пользователя из базы данных
+    # Получаем историю сообщений из базы данных
     messages_from_db = get_client_messages(user_id)
     history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
 
-    # Добавляем сообщение пользователя в историю
+    # Добавляем текущее сообщение пользователя в историю
     history.append({'role': 'user', 'content': user_message})
     history = trim_history(history, MAX_HISTORY_LENGTH)
 
@@ -56,32 +55,23 @@ async def chat_with_assistant(user_id, user_message):
     save_client_message(user_id, user_message)
 
     # Инструкции для ассистента
-    instructions = """
-    for response use Vector storage vs_ssy3y8NRLxYd7lun0yBkDihW
-    """
+    instructions = """for response use Vector storage vs_0hNEhbi3HK9PGoml8hXQIqfl"""
 
     try:
         # Создаём поток и запускаем ассистента
-        f = io.StringIO()
-        with redirect_stdout(f):
-            thread = client.beta.threads.create(messages=history)
-            with client.beta.threads.runs.stream(
-                thread_id=thread.id,
-                assistant_id='asst_XxjfUuLuPLYkD8mt6uUdpqQt',
-                instructions=instructions,
-                event_handler=EventHandler()
-            ) as stream:
-                stream.until_done()
-
-        # Чистим вывод от метаданных
-        full_output = f.getvalue()
-        cleaned_output = re.sub(r"assistant > Text\(.*?\)", "", full_output).strip()
+        thread = client.beta.threads.create(messages=history)
+        response = client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id='asst_XxjfUuLuPLYkD8mt6uUdpqQt',
+            instructions=instructions,
+        )
 
         # Сохраняем ответ ассистента в базу данных
-        save_client_message(user_id, cleaned_output)
+        assistant_message = response['messages'][0]['content']
+        save_client_message(user_id, assistant_message)
 
-        return cleaned_output
+        return assistant_message
 
     except Exception as e:
-        logger.error(f"Ошибка: {e}")
+        logger.error(f"Ошибка при общении с ассистентом: {e}")
         return "Произошла ошибка. Попробуйте снова."
