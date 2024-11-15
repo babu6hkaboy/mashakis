@@ -58,7 +58,6 @@ async def chat_with_assistant(user_id, user_message):
 
     # Инструкции для ассистента
     instructions = """
-    You are a helpful assistant for a beauty salon. Provide concise and accurate responses based on the user's messages and context.
     """
 
     try:
