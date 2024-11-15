@@ -4,6 +4,7 @@ import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
 import asyncio
+from config import OPENAI_API_KEY
 
 load_dotenv()
 
