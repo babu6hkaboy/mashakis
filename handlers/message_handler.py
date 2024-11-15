@@ -19,16 +19,21 @@ def handle_message(data):
                 logger.info(f"Сообщение от {sender_id}: {user_message}")
 
                 # Получаем ответ от ассистента
-                assistant_reply = asyncio.run(chat_with_assistant(client, sender_id, user_message))
+                assistant_reply = asyncio.run(chat_with_assistant(sender_id, user_message))
 
                 # Логируем ответ ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
+
+                # Отправляем уведомление в Telegram, если ответ содержит ключевые слова
+                if is_important_message(assistant_reply):  # Проверяем ключевые слова
+                    send_telegram_notification_to_channel(sender_id, assistant_reply)
 
                 # Отправляем ответ пользователю через Messenger API
                 send_message(sender_id, assistant_reply)
 
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
+
 
 def send_message(recipient_id, message_text):
     """Отправляет сообщение клиенту через Messenger API"""
@@ -55,3 +60,10 @@ def send_message(recipient_id, message_text):
     else:
         logger.info(f"Сообщение отправлено клиенту {recipient_id} успешно")
     return response.json() if response.status_code == 200 else {"error": response.text}
+
+
+def is_important_message(message):
+    """Проверяет, содержит ли сообщение ключевые слова для отправки уведомления в Telegram."""
+    keywords = ["Please", "give", "minutes", "manager", "back", "possible"]  # Список ключевых слов
+    found_keywords = [word for word in keywords if word.lower() in message.lower()]
+    return len(found_keywords) >= 3  # Минимум 3 ключевых слова
