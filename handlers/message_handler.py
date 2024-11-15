@@ -11,27 +11,24 @@ PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO56pyfTAboXhL8SwcFQpi5NhitfPckvkInLpKU8lbbe0q8
 
 
 
-def handle_message(data):
+async def handle_message(data):
     try:
-        for entry in data.get('entry', []):
-            for messaging in entry.get('messaging', []):
-                sender_id = messaging['sender']['id']
-                user_message = messaging['message']['text']
+        entry = data.get('entry', [])[0]
+        messaging = entry.get('messaging', [])[0]
+        sender_id = messaging['sender']['id']
+        message_text = messaging['message']['text']
 
-                # Логируем входящее сообщение
-                logger.info(f"Сообщение от {sender_id}: {user_message}")
+        logger.info(f"Сообщение от {sender_id}: {message_text}")
 
-                # Получаем ответ от ассистента
-                assistant_reply = asyncio.run(chat_with_assistant(sender_id, user_message))
+        # Получаем ответ от ассистента
+        bot_response = await chat_with_assistant(sender_id, message_text)
 
-                # Логируем ответ ассистента
-                logger.info(f"Ответ ассистента: {assistant_reply}")
-
-                # Отправляем ответ пользователю через Messenger API
-                send_message(sender_id, assistant_reply)
-
+        logger.info(f"Ответ ассистента: {bot_response}")
+        return bot_response
     except Exception as e:
-        logger.error(f"Ошибка при обработке сообщения: {e}")
+        logger.error(f"Ошибка обработки сообщения: {e}")
+        return "Произошла ошибка. Попробуйте снова."
+    
 
 def send_message(recipient_id, message_text):
     """Отправляет сообщение клиенту через Messenger API"""
