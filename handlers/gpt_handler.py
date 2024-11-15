@@ -47,7 +47,11 @@ def trim_history(history, max_length):
 async def chat_with_assistant(client, user_id, user_message):
     # Получаем историю сообщений пользователя из базы данных
     messages_from_db = get_client_messages(user_id)
-    history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
+    history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db if msg.message_text.strip()]
+    
+    # Проверка пользовательского сообщения
+    if user_message.strip():  # Проверяем, что сообщение не пустое
+        history.append({'role': 'user', 'content': user_message})
 
     # Добавляем сообщение пользователя в историю
     history.append({'role': 'user', 'content': user_message})
