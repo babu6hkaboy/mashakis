@@ -52,10 +52,10 @@ def chat_with_assistant_sync(user_id, user_message):
     save_client_message(user_id, user_message)
 
     # Инструкции для ассистента
-    instructions = "for response use Vector storage vs_0hNEhbi3HK9PGoml8hXQIqfl"
+    instructions = ""
 
     try:
-        # Запуск ассистента
+        # Создание потока и запуск ассистента
         thread = client.beta.threads.create(messages=history)
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
@@ -63,8 +63,16 @@ def chat_with_assistant_sync(user_id, user_message):
             instructions=instructions,
         )
         
-        # Получение содержимого ответа
-        bot_response = run.message.content  # Исправленный способ доступа к ответу
+        # Логируем структуру объекта run
+        logger.info(f"Run object: {run}")
+
+        # Проверяем доступные атрибуты объекта run
+        if hasattr(run, "content"):
+            bot_response = run.content  # Попробуйте получить контент из атрибута content
+        elif hasattr(run, "choices") and run.choices:
+            bot_response = run.choices[0].text  # Если возвращается список вариантов
+        else:
+            raise ValueError("Ответ ассистента пуст или имеет неизвестный формат.")
 
         # Сохраняем ответ ассистента в базу данных
         save_client_message(user_id, bot_response)
