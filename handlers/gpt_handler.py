@@ -39,42 +39,40 @@ class EventHandler(AssistantEventHandler):
 def trim_history(history, max_length):
     return history[-max_length:]
 
-def chat_with_assistant_sync(user_id, user_message):
-    """Синхронное общение с ассистентом"""
-    # Получение истории сообщений
-    messages_from_db = get_client_messages(user_id)
-    history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
+import logging
+from openai import OpenAI
 
-    # Добавляем новое сообщение в историю
-    history.append({'role': 'user', 'content': user_message})
-    history = trim_history(history, MAX_HISTORY_LENGTH)
+# Настраиваем логирование
+logger = logging.getLogger("beauty_salon_chatbot")
 
-    # Сохраняем сообщение пользователя в базу данных
-    save_client_message(user_id, user_message)
-
+# Функция для обработки ответа ассистента
+def get_response_from_assistant(history, assistant_id, client):
     try:
-        # Создаём поток (thread) и запускаем диалог
+        # Создание потока сообщений
+        logger.info("Создание нового потока сообщений...")
         thread = client.beta.threads.create(messages=history)
-        run = client.beta.threads.runs.create(
-            thread_id=thread.id,
-            assistant_id="asst_XxjfUuLuPLYkD8mt6uUdpqQt",  # Ваш ID ассистента
-        )
+        logger.info(f"Созданный поток: {thread}")
 
-        # Логируем объект Run для анализа
-        logger.info(f"Run object: {run}")
+        # Запуск диалога с ассистентом
+        logger.info("Запуск диалога с ассистентом...")
+        run = client.beta.threads.runs.create(thread_id=thread.id, assistant_id=assistant_id)
+        logger.info(f"Объект Run: {run}")
 
-        # Извлечение ответа из объекта Run
-        if hasattr(run, 'message') and run.message:
+        # Проверка наличия ответа
+        if hasattr(run, 'message') and 'content' in run.message:
             bot_response = run.message['content']
         else:
-            logger.error(f"Ошибка: Не удалось извлечь ответ из объекта Run: {run}")
+            logger.error(f"Ошибка: Ответ ассистента пуст или имеет неизвестный формат. Run: {run}")
             bot_response = "Произошла ошибка. Попробуйте снова."
 
-        # Сохраняем ответ ассистента в базу данных
-        save_client_message(user_id, bot_response)
+        # Логирование ответа ассистента
+        logger.info(f"Ответ ассистента: {bot_response}")
+
         return bot_response
 
     except Exception as e:
+        # Логирование ошибки
         logger.error(f"Ошибка при общении с ассистентом: {e}")
         return "Произошла ошибка. Попробуйте снова."
+
 
