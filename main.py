@@ -4,7 +4,6 @@ import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
 import asyncio
-from config import OPENAI_API_KEY
 
 load_dotenv()
 
@@ -12,7 +11,7 @@ app = Flask(__name__)
 VERIFY_TOKEN = os.getenv('VERIFY_TOKEN', '1e9f4858-5058-434b-a778-3ec8d9701ab8')
 
 # Инициализация OpenAI клиента
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')  # Убедитесь, что переменная окружения установлена
+OPENAI_API_KEY = os.getenv('GPT_API_KEY_3')  # Убедитесь, что переменная окружения установлена
 
 if not OPENAI_API_KEY:
     raise RuntimeError("Переменная окружения 'OPENAI_API_KEY' не установлена!")
