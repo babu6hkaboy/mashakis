@@ -13,29 +13,27 @@ def handle_message(data):
         for entry in data.get('entry', []):
             for messaging in entry.get('messaging', []):
                 sender_id = messaging['sender']['id']
-                user_message = messaging['message']['text']  # Получение текста сообщения
+                user_message = messaging['message'].get('text', '').strip()
 
-                # Логируем входящее сообщение
-                logger.info(f"Сообщение от {sender_id}: {user_message}")
+                # Проверка наличия текста
+                if not user_message:
+                    logger.error(f"Пустое сообщение от пользователя {sender_id}. Пропускаем.")
+                    return
 
-                # Передача аргументов в chat_with_assistant
+                # Логирование перед вызовом
                 logger.info(f"Передача аргументов в chat_with_assistant: user_id={sender_id}, user_message={user_message}")
 
-                # Получаем ответ от ассистента
-                assistant_reply = asyncio.run(chat_with_assistant(sender_id, user_message))
+                # Передаём client в функцию
+                assistant_reply = asyncio.run(chat_with_assistant(client, sender_id, user_message))
 
-                # Логируем ответ ассистента
+                # Логирование ответа ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
 
-                # Уведомление в Telegram
-                if is_important_message(assistant_reply):
-                    send_telegram_notification_to_channel(sender_id, assistant_reply)
-
-                # Отправка ответа через Messenger API
+                # Отправка ответа клиенту
                 send_message(sender_id, assistant_reply)
-
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
+
 
 
 def send_message(recipient_id, message_text):
