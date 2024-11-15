@@ -18,10 +18,7 @@ def home():
 def webhook():
     data = request.get_json()
     logger.info(f"Полученные данные от Messenger: {data}")
-
-    # Асинхронный запуск
-    asyncio.run(handle_message(data))
-
+    handle_message(data)  # Здесь без asyncio.run
     return 'EVENT_RECEIVED', 200
 
 
