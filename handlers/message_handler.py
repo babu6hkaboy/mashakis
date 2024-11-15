@@ -2,7 +2,7 @@ import requests
 from handlers.telegram_notifier import send_telegram_notification_to_channel
 from handlers.database import save_client_message, get_client_messages
 from utils.logger import logger
-from handlers.gpt_handler import chat_with_assistant_sync
+from handlers.gpt_handler import get_response_from_assistant
 import asyncio
 
 # Укажите Page Access Token напрямую
@@ -21,7 +21,7 @@ def handle_message(data):
         logger.info(f"Сообщение от {sender_id}: {message_text}")
 
         # Генерация ответа
-        bot_response = chat_with_assistant_sync(sender_id, message_text)  # Синхронная версия
+        bot_response = get_response_from_assistant(sender_id, message_text)  # Синхронная версия
         logger.info(f"Ответ ассистента: {bot_response}")
 
         # Отправка сообщения клиенту
