@@ -15,12 +15,13 @@ def home():
     return "Welcome to Flask!", 200
 
 @app.route('/webhook', methods=['POST'])
-def webhook():
+def webhook(client):
     data = request.get_json()
     logger.info(f"Полученные данные от Messenger: {data}")
-    handle_message(data)  # Здесь без asyncio.run
+    handle_message(data, client)  # Здесь без asyncio.run
     return 'EVENT_RECEIVED', 200
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+ 

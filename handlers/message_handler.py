@@ -21,13 +21,14 @@ def handle_message(data, client):
         logger.info(f"Сообщение от {sender_id}: {message_text}")
 
         # Генерация ответа
-        bot_response = get_response_from_assistant(client, sender_id, message_text)  # Синхронная версия
+        bot_response = get_response_from_assistant(client, sender_id, message_text)
         logger.info(f"Ответ ассистента: {bot_response}")
 
         # Отправка сообщения клиенту
         send_message(sender_id, bot_response)
     except Exception as e:
         logger.error(f"Ошибка в handle_message: {e}")
+
 
     
 
