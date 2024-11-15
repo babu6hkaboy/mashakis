@@ -13,10 +13,13 @@ def handle_message(data):
         for entry in data.get('entry', []):
             for messaging in entry.get('messaging', []):
                 sender_id = messaging['sender']['id']
-                user_message = messaging['message']['text']
+                user_message = messaging['message']['text']  # Получение текста сообщения
 
                 # Логируем входящее сообщение
                 logger.info(f"Сообщение от {sender_id}: {user_message}")
+
+                # Передача аргументов в chat_with_assistant
+                logger.info(f"Передача аргументов в chat_with_assistant: user_id={sender_id}, user_message={user_message}")
 
                 # Получаем ответ от ассистента
                 assistant_reply = asyncio.run(chat_with_assistant(sender_id, user_message))
@@ -24,11 +27,11 @@ def handle_message(data):
                 # Логируем ответ ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
 
-                # Отправляем уведомление в Telegram, если ответ содержит ключевые слова
-                if is_important_message(assistant_reply):  # Проверяем ключевые слова
+                # Уведомление в Telegram
+                if is_important_message(assistant_reply):
                     send_telegram_notification_to_channel(sender_id, assistant_reply)
 
-                # Отправляем ответ пользователю через Messenger API
+                # Отправка ответа через Messenger API
                 send_message(sender_id, assistant_reply)
 
     except Exception as e:
