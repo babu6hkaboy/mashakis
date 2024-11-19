@@ -205,7 +205,7 @@ Hair Extensions Consultations in person are held from 8 to 10 AM from Tuesday to
             thread = client.beta.threads.create(messages=history)
             with client.beta.threads.runs.stream(
                 thread_id=thread.id,
-                assistant_id='asst_XxjfUuLuPLYkD8mt6uUdpqQt',
+                assistant_id='asst_cTZRlEe4EtoSy17GYjpEz1GZ',
                 instructions=instructions,
                 event_handler=EventHandler()
             ) as stream:
