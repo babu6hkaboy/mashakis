@@ -175,6 +175,9 @@ If the client specifies a time, send the booking link: "You can book your hair e
 ##4. Answering Additional Questions##
 Answer all additional questions from the client that you can respond to. Answer each question gradually. 
 
+Price List:
+{price_list}
+
 История переписки:
 {client_history}
 """
