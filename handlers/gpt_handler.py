@@ -223,3 +223,5 @@ Hair Extensions Consultations in person are held from 8 to 10 AM from Tuesday to
     except Exception as e:
         logger.error(f"Ошибка: {e}")
         return "Произошла ошибка. Попробуйте снова."
+    
+#1
