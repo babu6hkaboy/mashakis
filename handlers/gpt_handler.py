@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Получаем API-ключ OpenAI
-openai_api_key = os.getenv('GPT_API_KEY_3')
+openai_api_key = os.getenv('OPENAI_API_KEY')
 if not openai_api_key:
     raise ValueError("OpenAI API ключ не найден в переменных окружения")
 
