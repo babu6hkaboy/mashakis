@@ -31,7 +31,7 @@ def handle_message(data):
 
                 # Проверяем необходимость отправки уведомления в Telegram
                 trigger_words = {"please", "give", "manager", "information", "minutes"}
-                if any(word in assistant_reply.lower() for word in trigger_words):
+                if isinstance(assistant_reply, str) and any(word in assistant_reply.lower() for word in trigger_words):
                     logger.info("Обнаружены триггерные слова в ответе ассистента. Отправляем уведомление в Telegram.")
                     send_telegram_notification_to_channel(sender_id, user_message)  # Отправляем последнее сообщение пользователя
                 else:
@@ -41,11 +41,6 @@ def handle_message(data):
                 send_message(sender_id, assistant_reply)
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
-
-
-
-
-
 
 def send_message(recipient_id, message_text):
     """Отправляет сообщение клиенту через Messenger API"""
@@ -76,6 +71,10 @@ def send_message(recipient_id, message_text):
 
 def is_important_message(message):
     """Проверяет, содержит ли сообщение ключевые слова для отправки уведомления в Telegram."""
+    if not isinstance(message, str):
+        logger.error(f"Некорректный формат сообщения: {type(message)}. Ожидалась строка.")
+        return False
+
     keywords = ["Please", "give", "minutes", "manager", "back", "possible"]  # Список ключевых слов
     found_keywords = [word for word in keywords if word.lower() in message.lower()]
     return len(found_keywords) >= 3  # Минимум 3 ключевых слова

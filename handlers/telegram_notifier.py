@@ -21,7 +21,7 @@ if not PAGE_ACCESS_TOKEN:
 
 # Набор ключевых слов для проверки
 KEYWORDS = set([
-    "Please", "give", "minutes", "pass", "information", "manager", "thank", "beautiful", 
+    "Please", "give", "minutes", "pass", "information", "manager", "thank", "beautiful",
 ])
 
 # Минимальное количество совпадений для отправки уведомления
@@ -47,6 +47,10 @@ def get_user_name(user_id):
 
 def should_notify(response_text):
     """Проверка, стоит ли отправлять уведомление в Telegram."""
+    if not isinstance(response_text, str):
+        logger.error(f"Некорректный формат текста ответа: {type(response_text)}. Ожидалась строка.")
+        return False
+
     # Преобразуем текст ответа и ключевые слова в множества
     response_words = set(response_text.lower().split())
     # Считаем пересечение с ключевыми словами
@@ -87,4 +91,3 @@ def send_telegram_notification_to_channel(user_id, message_text):
 
     except Exception as e:
         logger.error(f"Ошибка при отправке уведомления в Telegram: {e}")
-
