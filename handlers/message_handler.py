@@ -39,16 +39,27 @@ def handle_message(data):
 
                 # Проверяем необходимость отправки уведомления в Telegram
                 trigger_words = {"please", "give", "manager", "information", "minutes"}
-                if any(word in assistant_reply_text.lower() for word in trigger_words):
+                should_notify = any(word in assistant_reply_text.lower() for word in trigger_words)
+
+                if should_notify:
                     logger.info("Обнаружены триггерные слова в ответе ассистента. Отправляем уведомление в Telegram.")
-                    send_telegram_notification_to_channel(sender_id, user_message)  # Отправляем последнее сообщение пользователя
+                    try:
+                        send_telegram_notification_to_channel(sender_id, user_message)
+                        logger.info("Уведомление в Telegram успешно отправлено.")
+                    except Exception as e:
+                        logger.error(f"Ошибка при отправке уведомления в Telegram: {e}")
                 else:
                     logger.info("Триггерные слова в ответе ассистента не найдены. Уведомление в Telegram не отправлено.")
 
                 # Отправка ответа клиенту
-                send_message(sender_id, assistant_reply_text)
+                try:
+                    send_message(sender_id, assistant_reply_text)
+                    logger.info(f"Ответ успешно отправлен клиенту {sender_id}.")
+                except Exception as e:
+                    logger.error(f"Ошибка при отправке ответа клиенту {sender_id}: {e}")
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
+
 
 
 def send_message(recipient_id, message_text):

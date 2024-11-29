@@ -46,58 +46,73 @@ def trim_history(history, max_length):
 
 # Асинхронная функция для общения с ассистентом
 async def chat_with_assistant(client, user_id, user_message):
-    # Получаем историю сообщений пользователя
-    messages_from_db = get_client_messages(user_id)
-    history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
+    try:
+        # История сообщений пользователя
+        messages_from_db = get_client_messages(user_id)
+        history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
 
-    # Создание нового потока
-    thread = client.beta.threads.create()
+        # Создание потока
+        thread = client.beta.threads.create()
 
-    # Добавление сообщений в поток
-    for message in history:
-        client.beta.threads.messages.create(
+        # Добавление сообщений в поток
+        for message in history:
+            client.beta.threads.messages.create(
+                thread_id=thread.id,
+                role=message['role'],
+                content=message['content']
+            )
+
+        # Добавление нового сообщения
+        if user_message.strip():
+            client.beta.threads.messages.create(
+                thread_id=thread.id,
+                role="user",
+                content=user_message
+            )
+
+        # Запуск выполнения ассистента
+        run = client.beta.threads.runs.create(
             thread_id=thread.id,
-            role=message['role'],
-            content=message['content']
+            assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ"
         )
 
-    # Добавление нового сообщения пользователя
-    if user_message.strip():
-        client.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=user_message
-        )
+        # Проверка выполнения
+        max_retries = 10
+        retry_count = 0
+        while retry_count < max_retries:
+            run_status = client.beta.threads.runs.retrieve(
+                thread_id=thread.id,
+                run_id=run.id
+            )
 
-    # Запуск выполнения ассистента
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ"
-    )
+            if run_status.status == "completed":
+                logger.info("Запрос выполнен успешно.")
+                break
+            elif run_status.status == "failed":
+                logger.error("Ошибка выполнения ассистента.")
+                return "Произошла ошибка. Попробуйте снова."
 
-    # Ожидание завершения выполнения
-    while True:
-        run_status = client.beta.threads.runs.retrieve(
-            thread_id=thread.id,
-            run_id=run.id
-        )
-        if run_status.status == "completed":
-            break
-        elif run_status.status == "failed":
-            logger.error("Ошибка выполнения ассистента")
-            return "Произошла ошибка. Попробуйте снова."
-        time.sleep(2)
+            retry_count += 1
+            time.sleep(2)
 
-    # Получение ответа
-    messages = client.beta.threads.messages.list(thread_id=thread.id)
-    assistant_response = [
-        msg.content for msg in messages if msg.role == "assistant"
-    ][-1]
+        if retry_count == max_retries:
+            logger.error("Превышено количество попыток ожидания завершения выполнения.")
+            return "Время ожидания истекло. Попробуйте снова."
 
-    # Сохраняем сообщение ассистента в базу данных
-    save_client_message(user_id, assistant_response)
+        # Получение ответа
+        messages = client.beta.threads.messages.list(thread_id=thread.id)
+        assistant_response = [
+            msg.content for msg in messages if msg.role == "assistant"
+        ][-1]
 
-    return assistant_response
+        # Сигнал об успешной обработке
+        logger.info(f"Ответ успешно обработан: {assistant_response}")
+        return assistant_response
+
+    except Exception as e:
+        logger.error(f"Ошибка в chat_with_assistant: {e}")
+        return "Произошла ошибка. Попробуйте снова."
+
 
     
 #1
