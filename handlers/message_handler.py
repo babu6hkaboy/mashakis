@@ -29,22 +29,35 @@ def handle_message(data):
                 # Логирование ответа ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
 
+                # Обработка ответа ассистента: извлечение текста из объектов
+                if isinstance(assistant_reply, list):
+                    assistant_reply_text = " ".join(
+                        block.text.value for block in assistant_reply if hasattr(block, 'text') and hasattr(block.text, 'value')
+                    )
+                else:
+                    assistant_reply_text = str(assistant_reply)
+
                 # Проверяем необходимость отправки уведомления в Telegram
                 trigger_words = {"please", "give", "manager", "information", "minutes"}
-                if isinstance(assistant_reply, str) and any(word in assistant_reply.lower() for word in trigger_words):
+                if any(word in assistant_reply_text.lower() for word in trigger_words):
                     logger.info("Обнаружены триггерные слова в ответе ассистента. Отправляем уведомление в Telegram.")
                     send_telegram_notification_to_channel(sender_id, user_message)  # Отправляем последнее сообщение пользователя
                 else:
                     logger.info("Триггерные слова в ответе ассистента не найдены. Уведомление в Telegram не отправлено.")
 
                 # Отправка ответа клиенту
-                send_message(sender_id, assistant_reply)
+                send_message(sender_id, assistant_reply_text)
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
+
 
 def send_message(recipient_id, message_text):
     """Отправляет сообщение клиенту через Messenger API"""
     logger.info(f"Подготовка к отправке сообщения клиенту {recipient_id}")
+    if not isinstance(message_text, str):
+        logger.warning(f"Сообщение не является строкой, преобразуем: {type(message_text)}")
+        message_text = str(message_text)
+
     params = {
         'access_token': PAGE_ACCESS_TOKEN
     }
