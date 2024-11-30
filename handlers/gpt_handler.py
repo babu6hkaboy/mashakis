@@ -26,7 +26,7 @@ if not openai_api_key:
 client = Client(api_key=openai_api_key)
 
 # Максимальное количество сообщений в истории
-MAX_HISTORY_LENGTH = 10
+MAX_HISTORY_LENGTH = 20
 
 # Генерация уникального chat_id
 def generate_chat_id():
