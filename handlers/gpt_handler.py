@@ -1,14 +1,9 @@
 import os
-import re
-import io
 import logging
-import random
-import string
-from contextlib import redirect_stdout
-from openai import Client, AssistantEventHandler
+import time
+import openai
 from dotenv import load_dotenv
 from handlers.database import save_client_message, get_client_messages
-import time
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -18,101 +13,97 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Получаем API-ключ OpenAI
-openai_api_key = os.getenv('OPENAI_API_KEY', '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')
-if not openai_api_key:
+openai.api_key = os.getenv('OPENAI_API_KEY')
+if not openai.api_key:
     raise ValueError("OpenAI API ключ не найден в переменных окружения")
 
-# Инициализируем клиент OpenAI
-client = Client(api_key=openai_api_key)
+client = openai.OpenAI(api_key=openai.api_key)
 
 # Максимальное количество сообщений в истории
 MAX_HISTORY_LENGTH = 20
-
-# Генерация уникального chat_id
-def generate_chat_id():
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-
-# Класс для обработки событий ассистента
-class EventHandler(AssistantEventHandler):
-    def on_text_created(self, text) -> None:
-        print(f"\nassistant > {text}", end="", flush=True)
-
-    def on_text_delta(self, delta, snapshot):
-        print(delta.value, end="", flush=True)
 
 # Функция для ограничения длины истории сообщений
 def trim_history(history, max_length):
     return history[-max_length:]
 
 # Асинхронная функция для общения с ассистентом
-async def chat_with_assistant(client, user_id, user_message):
+async def chat_with_assistant(user_id, user_message):
     try:
-        # История сообщений пользователя
+        # Получение истории сообщений из базы данных
+        logger.info(f"Получение истории сообщений для user_id={user_id}")
         messages_from_db = get_client_messages(user_id)
-        history = [{'role': 'user', 'content': msg.message_text} for msg in messages_from_db]
 
-        # Создание потока
-        thread = client.beta.threads.create()
+        # Формирование истории для потока
+        history = [
+            {'role': 'user', 'content': msg.message_text.strip()}
+            for msg in messages_from_db
+            if msg.message_text and msg.message_text.strip()
+        ]
+        history = trim_history(history, MAX_HISTORY_LENGTH)
+        logger.info(f"История сообщений (после обрезки): {history}")
 
-        # Добавление сообщений в поток
+        # Создание нового потока
+        thread = openai.OpenAI(api_key=openai.api_key).beta.threads.create()
+        logger.info(f"Создан новый поток: thread_id={thread.id}")
+
+        # Добавление сообщений из истории в поток
         for message in history:
-            client.beta.threads.messages.create(
+            openai.OpenAI(api_key=openai.api_key).beta.threads.messages.create(
                 thread_id=thread.id,
                 role=message['role'],
                 content=message['content']
             )
+        logger.info(f"Сообщения из истории добавлены в поток thread_id={thread.id}")
 
-        # Добавление нового сообщения
+        # Добавление текущего сообщения пользователя в поток
         if user_message.strip():
-            client.beta.threads.messages.create(
+            openai.OpenAI(api_key=openai.api_key).beta.threads.messages.create(
                 thread_id=thread.id,
                 role="user",
                 content=user_message
             )
+            logger.info(f"Добавлено сообщение пользователя: {user_message}")
+
+        # Сохранение сообщения пользователя в базу данных
+        save_client_message(user_id, user_message)
+        logger.info(f"Сообщение пользователя сохранено в базу данных: {user_message}")
 
         # Запуск выполнения ассистента
-        run = client.beta.threads.runs.create(
+        run = openai.OpenAI(api_key=openai.api_key).beta.threads.runs.create(
             thread_id=thread.id,
             assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ"
         )
+        logger.info(f"Запуск выполнения ассистента: run_id={run.id}")
 
-        # Проверка выполнения
-        max_retries = 10
-        retry_count = 0
-        while retry_count < max_retries:
-            run_status = client.beta.threads.runs.retrieve(
+        # Проверка выполнения ассистента
+        while True:
+            run_status = openai.OpenAI(api_key=openai.api_key).beta.threads.runs.retrieve(
                 thread_id=thread.id,
                 run_id=run.id
             )
+            logger.info(f"Текущий статус выполнения ассистента: {run_status.status}")
 
             if run_status.status == "completed":
-                logger.info("Запрос выполнен успешно.")
+                logger.info("Выполнение ассистента завершено успешно.")
                 break
             elif run_status.status == "failed":
                 logger.error("Ошибка выполнения ассистента.")
                 return "Произошла ошибка. Попробуйте снова."
+            time.sleep(2)  # Ожидание перед повторной проверкой
 
-            retry_count += 1
-            time.sleep(2)
-
-        if retry_count == max_retries:
-            logger.error("Превышено количество попыток ожидания завершения выполнения.")
-            return "Время ожидания истекло. Попробуйте снова."
-
-        # Получение ответа
-        messages = client.beta.threads.messages.list(thread_id=thread.id)
+        # Получение сообщений из потока
+        messages = openai.OpenAI(api_key=openai.api_key).beta.threads.messages.list(thread_id=thread.id)
         assistant_response = [
-            msg.content for msg in messages if msg.role == "assistant"
+            msg.content[0].text.value for msg in messages if msg.role == "assistant"
         ][-1]
+        logger.info(f"Ответ ассистента: {assistant_response}")
 
-        # Сигнал об успешной обработке
-        logger.info(f"Ответ успешно обработан: {assistant_response}")
+        # Сохранение ответа ассистента в базу данных
+        save_client_message(user_id, assistant_response)
+        logger.info(f"Ответ ассистента сохранен в базу данных: {assistant_response}")
+
         return assistant_response
 
     except Exception as e:
         logger.error(f"Ошибка в chat_with_assistant: {e}")
         return "Произошла ошибка. Попробуйте снова."
-
-
-    
-#1

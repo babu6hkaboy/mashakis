@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from config import DATABASE_URI
 from datetime import datetime
 from utils.logger import logger
+import os
 
 engine = create_engine(
     DATABASE_URI,
