@@ -19,13 +19,6 @@ if not openai.api_key:
 
 client = openai.OpenAI(api_key=openai.api_key)
 
-# Максимальное количество сообщений в истории
-MAX_HISTORY_LENGTH = 20
-
-# Функция для ограничения длины истории сообщений
-def trim_history(history, max_length):
-    return history[-max_length:]
-
 # Асинхронная функция для общения с ассистентом
 async def chat_with_assistant(client, sender_id, user_message):
     try:
@@ -33,14 +26,13 @@ async def chat_with_assistant(client, sender_id, user_message):
         logger.info(f"Получение истории сообщений для user_id={sender_id}")
         messages_from_db = get_client_messages(sender_id)
 
-        # Формирование истории для потока
+        # Формирование полной истории для потока
         history = [
             {'role': 'user', 'content': msg.message_text.strip()}
             for msg in messages_from_db
             if msg.message_text and msg.message_text.strip()
         ]
-        history = trim_history(history, MAX_HISTORY_LENGTH)
-        logger.info(f"История сообщений (после обрезки): {history}")
+        logger.info(f"История сообщений (полная): {history}")
 
         # Создание нового потока
         thread = openai.OpenAI(api_key=openai.api_key).beta.threads.create()
