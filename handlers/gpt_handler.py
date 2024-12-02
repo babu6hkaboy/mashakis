@@ -27,11 +27,11 @@ def trim_history(history, max_length):
     return history[-max_length:]
 
 # Асинхронная функция для общения с ассистентом
-async def chat_with_assistant(user_id, user_message):
+async def chat_with_assistant(client, sender_id, user_message):
     try:
         # Получение истории сообщений из базы данных
-        logger.info(f"Получение истории сообщений для user_id={user_id}")
-        messages_from_db = get_client_messages(user_id)
+        logger.info(f"Получение истории сообщений для user_id={sender_id}")
+        messages_from_db = get_client_messages(sender_id)
 
         # Формирование истории для потока
         history = [
@@ -65,7 +65,7 @@ async def chat_with_assistant(user_id, user_message):
             logger.info(f"Добавлено сообщение пользователя: {user_message}")
 
         # Сохранение сообщения пользователя в базу данных
-        save_client_message(user_id, user_message)
+        save_client_message(sender_id, user_message)
         logger.info(f"Сообщение пользователя сохранено в базу данных: {user_message}")
 
         # Запуск выполнения ассистента
@@ -99,7 +99,7 @@ async def chat_with_assistant(user_id, user_message):
         logger.info(f"Ответ ассистента: {assistant_response}")
 
         # Сохранение ответа ассистента в базу данных
-        save_client_message(user_id, assistant_response)
+        save_client_message(sender_id, assistant_response)
         logger.info(f"Ответ ассистента сохранен в базу данных: {assistant_response}")
 
         return assistant_response
