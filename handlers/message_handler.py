@@ -1,7 +1,6 @@
 import requests
 from handlers.gpt_handler import chat_with_assistant, client
 from handlers.telegram_notifier import send_telegram_notification_to_channel
-from handlers.database import save_client_message, get_client_messages
 from utils.logger import logger
 import asyncio
 
