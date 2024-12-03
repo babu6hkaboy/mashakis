@@ -30,7 +30,7 @@ async def chat_with_assistant(client, sender_id, user_message):
             save_thread_id(sender_id, thread_id)
             logger.info(f"Создан новый тред: thread_id={thread_id}")
 
-        # Добавление сообщения пользователя в существующий тред
+        # Добавление нового сообщения пользователя в тред
         if user_message.strip():
             client.beta.threads.messages.create(
                 thread_id=thread_id,
@@ -62,11 +62,21 @@ async def chat_with_assistant(client, sender_id, user_message):
                 return "Произошла ошибка. Попробуйте снова."
             time.sleep(2)
 
-        # Получение последнего сообщения от ассистента
-        messages = client.beta.threads.messages.list(thread_id=thread_id)
-        assistant_response = [
+        # Получение новых сообщений из треда
+        messages = client.beta.threads.messages.list(
+            thread_id=thread_id,
+            after=run_status.run.started_at  # Загружаем только новые сообщения после запуска
+        )
+        assistant_responses = [
             msg.content[0].text.value for msg in messages if msg.role == "assistant"
-        ][-1]
+        ]
+
+        # Проверяем наличие новых ответов
+        if not assistant_responses:
+            logger.error("Ответ ассистента не найден.")
+            return "Произошла ошибка. Попробуйте снова."
+
+        assistant_response = assistant_responses[-1]  # Последний ответ ассистента
         logger.info(f"Ответ ассистента: {assistant_response}")
 
         return assistant_response
