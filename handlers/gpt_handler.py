@@ -1,7 +1,6 @@
 import os
 import logging
 import time
-import httpx  # Используем httpx вместо openai для ручного создания тредов
 import openai
 from dotenv import load_dotenv
 from handlers.database import get_thread_id, save_thread_id
@@ -14,35 +13,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Получаем API-ключ OpenAI
-openai_api_key = os.getenv('OPENAI_API_KEY')
-if not openai_api_key:
+openai.api_key = os.getenv('OPENAI_API_KEY')
+if not openai.api_key:
     raise ValueError("OpenAI API ключ не найден в переменных окружения")
 
 client = openai.OpenAI(api_key=openai.api_key)
-
-
-# Заголовки для OpenAI API
-HEADERS = {
-    "Authorization": f"Bearer {openai_api_key}",
-    "OpenAI-Beta": "assistants=v2"
-}
-
-async def create_thread():
-    """
-    Создаёт новый тред с использованием HTTP-запроса.
-    """
-    try:
-        response = httpx.post(
-            "https://api.openai.com/v1/threads",
-            headers=HEADERS
-        )
-        response.raise_for_status()
-        thread_data = response.json()
-        logger.info(f"Тред успешно создан: {thread_data}")
-        return thread_data.get("id")
-    except Exception as e:
-        logger.error(f"Ошибка при создании треда: {e}")
-        return None
 
 async def chat_with_assistant(client, sender_id, user_message):
     try:
@@ -51,11 +26,13 @@ async def chat_with_assistant(client, sender_id, user_message):
         # Проверка существующего thread_id
         thread_id = get_thread_id(sender_id)
         if not thread_id:
-            thread_id = await create_thread()
-            if not thread_id:
-                return "Ошибка при создании треда. Попробуйте снова."
+            # Создаем новый тред
+            thread = client.beta.threads.create()
+            thread_id = thread.id
             save_thread_id(sender_id, thread_id)
             logger.info(f"Создан новый тред: thread_id={thread_id}")
+        else:
+            logger.info(f"Используется существующий thread_id={thread_id}")
 
         # Логируем сообщение, отправляемое в OpenAI
         logger.info(f"Отправляем сообщение в OpenAI от пользователя {sender_id}: {user_message}")
