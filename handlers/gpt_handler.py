@@ -19,9 +19,10 @@ if not openai.api_key:
 
 client = openai.OpenAI(api_key=openai.api_key)
 
-# Асинхронная функция для общения с ассистентом
 async def chat_with_assistant(client, sender_id, user_message):
     try:
+        logger.info(f"Начало обработки сообщения от пользователя {sender_id}: {user_message}")
+
         # Проверка существующего thread_id
         thread_id = get_thread_id(sender_id)
         if not thread_id:
@@ -30,39 +31,41 @@ async def chat_with_assistant(client, sender_id, user_message):
             save_thread_id(sender_id, thread_id)
             logger.info(f"Создан новый тред: thread_id={thread_id}")
 
+        # Логируем сообщение, отправляемое в OpenAI
+        logger.info(f"Отправляем сообщение в OpenAI от пользователя {sender_id}: {user_message}")
+        
         # Добавление нового сообщения пользователя в тред
-        if user_message.strip():
-            client.beta.threads.messages.create(
-                thread_id=thread_id,
-                role="user",
-                content=user_message
-            )
-            logger.info(f"Добавлено сообщение пользователя в thread_id={thread_id}: {user_message}")
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=user_message
+        )
+        logger.info(f"Добавлено сообщение пользователя в thread_id={thread_id}: {user_message}")
 
         # Запуск выполнения ассистента
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ"
         )
-        logger.info(f"Запуск выполнения ассистента: thread_id={thread_id}, run_id={run.id}")
+        logger.info(f"Запущено выполнение: run_id={run.id}")
 
-        # Проверка выполнения ассистента
+        # Ожидаем завершения выполнения
         while True:
             run_status = client.beta.threads.runs.retrieve(
                 thread_id=thread_id,
                 run_id=run.id
             )
-            logger.info(f"Текущий статус выполнения ассистента: {run_status.status}")
+            logger.info(f"Статус выполнения: {run_status.status}")
 
             if run_status.status == "completed":
-                logger.info(f"Выполнение завершено: thread_id={thread_id}")
                 break
             elif run_status.status == "failed":
-                logger.error(f"Ошибка выполнения ассистента: thread_id={thread_id}")
+                logger.error("Ошибка выполнения.")
                 return "Произошла ошибка. Попробуйте снова."
-            time.sleep(2)
+            else:
+                time.sleep(2)
 
-        # Получение последних сообщений ассистента
+        # Получение новых сообщений из треда
         messages = client.beta.threads.messages.list(thread_id=thread_id)
         assistant_responses = [
             msg.content[0].text.value for msg in messages if msg.role == "assistant"
@@ -73,11 +76,13 @@ async def chat_with_assistant(client, sender_id, user_message):
             return "Произошла ошибка. Попробуйте снова."
 
         assistant_response = assistant_responses[-1]
-        logger.info(f"Ответ ассистента: {assistant_response}")
+
+        # Логируем ответ, полученный от OpenAI
+        logger.info(f"Полученный ответ от OpenAI для пользователя {sender_id}: {assistant_response}")
 
         return assistant_response
 
     except Exception as e:
-        logger.error(f"Ошибка в chat_with_assistant: {e}")
-        return "Произошла ошибка. Попробуйте снова."
+        logger.error(f"Непредвиденная ошибка: {e}")
+        return "Произошла непредвиденная ошибка."
 
