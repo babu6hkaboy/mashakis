@@ -2,6 +2,7 @@ import os
 import logging
 import time
 import httpx  # Используем httpx вместо openai для ручного создания тредов
+import openai
 from dotenv import load_dotenv
 from handlers.database import get_thread_id, save_thread_id
 
@@ -16,6 +17,9 @@ logger = logging.getLogger(__name__)
 openai_api_key = os.getenv('OPENAI_API_KEY')
 if not openai_api_key:
     raise ValueError("OpenAI API ключ не найден в переменных окружения")
+
+client = openai.OpenAI(api_key=openai.api_key)
+
 
 # Заголовки для OpenAI API
 HEADERS = {
