@@ -34,9 +34,6 @@ async def chat_with_assistant(client, sender_id, user_message):
         else:
             logger.info(f"Используется существующий thread_id={thread_id}")
 
-        # Логируем сообщение, отправляемое в OpenAI
-        logger.info(f"Отправляем сообщение в OpenAI от пользователя {sender_id}: {user_message}")
-        
         # Добавление нового сообщения пользователя в тред
         client.beta.threads.messages.create(
             thread_id=thread_id,
@@ -45,14 +42,25 @@ async def chat_with_assistant(client, sender_id, user_message):
         )
         logger.info(f"Добавлено сообщение пользователя в thread_id={thread_id}: {user_message}")
 
-        # Запуск выполнения ассистента
+        # Получение всех сообщений из треда
+        messages = client.beta.threads.messages.list(thread_id=thread_id)
+        context = [
+            {"role": msg.role, "content": msg.content[0].text.value}
+            for msg in messages
+        ]
+        logger.info("История сообщений в треде:")
+        for msg in context:
+            logger.info(f"{msg['role']}: {msg['content']}")
+
+        # Запуск выполнения ассистента с контекстом
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
-            assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ"
+            assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ",
+            input={"messages": context}  # Передача полного контекста
         )
         logger.info(f"Запущено выполнение: run_id={run.id}")
 
-        # Ожидаем завершения выполнения
+        # Ожидание завершения выполнения
         while True:
             run_status = client.beta.threads.runs.retrieve(
                 thread_id=thread_id,
