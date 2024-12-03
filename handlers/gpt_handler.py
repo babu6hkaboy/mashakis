@@ -42,21 +42,10 @@ async def chat_with_assistant(client, sender_id, user_message):
         )
         logger.info(f"Добавлено сообщение пользователя в thread_id={thread_id}: {user_message}")
 
-        # Получение всех сообщений из треда
-        messages = client.beta.threads.messages.list(thread_id=thread_id)
-        context = [
-            {"role": msg.role, "content": msg.content[0].text.value}
-            for msg in messages
-        ]
-        logger.info("История сообщений в треде:")
-        for msg in context:
-            logger.info(f"{msg['role']}: {msg['content']}")
-
-        # Запуск выполнения ассистента с контекстом
+        # Запуск выполнения ассистента
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
-            assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ",
-            input={"messages": context}  # Передача полного контекста
+            assistant_id="asst_cTZRlEe4EtoSy17GYjpEz1GZ"
         )
         logger.info(f"Запущено выполнение: run_id={run.id}")
 
@@ -78,6 +67,10 @@ async def chat_with_assistant(client, sender_id, user_message):
 
         # Получение новых сообщений из треда
         messages = client.beta.threads.messages.list(thread_id=thread_id)
+        logger.info("История сообщений в треде:")
+        for msg in messages:
+            logger.info(f"{msg.role}: {msg.content[0].text.value}")
+
         assistant_responses = [
             msg.content[0].text.value for msg in messages if msg.role == "assistant"
         ]
