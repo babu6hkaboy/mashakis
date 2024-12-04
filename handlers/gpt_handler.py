@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 import openai
 from dotenv import load_dotenv
-from handlers.database import get_thread_id, save_thread_id
+from handlers.database import get_thread_id, save_thread_id, save_message, get_thread_history
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -81,31 +81,53 @@ def get_assistant_response(thread_id):
 
 
 async def chat_with_assistant(sender_id, user_message):
-    """Организация взаимодействия с ассистентом через выбранный тред."""
+    """Обработка сообщения с учётом сохранения и передачи истории."""
     try:
-        logger.info(
-            f"Начало обработки сообщения от пользователя {sender_id}: {user_message}"
-        )
+        logger.info(f"Начало обработки сообщения от пользователя {sender_id}: {user_message}")
 
-        # Проверка существующего thread_id
+        # Получение thread_id из базы данных
         thread_id = get_thread_id(sender_id)
         if not thread_id:
-            # Создаем новый тред
             thread_id = create_thread()
             save_thread_id(sender_id, thread_id)
             logger.info(f"Создан новый тред: {thread_id}")
+
+        # Сохраняем сообщение пользователя
+        save_message(thread_id, sender_id, "user", user_message)
+
+        # Извлекаем историю сообщений
+        thread_history = get_thread_history(thread_id)
+
+        # Отправка истории и получение ответа
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=ASSISTANT_ID,
+            messages=thread_history,
+        )
+        logger.info(f"Запущен Run: {run.id}")
+
+        while True:
+            run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+            logger.info(f"Статус выполнения Run: {run_status.status}")
+
+            if run_status.status == "completed":
+                break
+            elif run_status.status == "failed":
+                logger.error("Ошибка выполнения Run.")
+                return "Произошла ошибка. Попробуйте снова."
+            else:
+                time.sleep(2)
+
+        # Извлекаем последний ответ ассистента
+        messages = client.beta.threads.messages.list(thread_id=thread_id)
+        assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
+        if assistant_message:
+            assistant_reply = assistant_message.content[0].text.value
+            save_message(thread_id, sender_id, "assistant", assistant_reply)  # Сохраняем ответ ассистента
+            return assistant_reply
         else:
-            logger.info(f"Используется существующий тред: {thread_id}")
-
-        # Отправка сообщения пользователя
-        send_message_to_thread(thread_id, user_message)
-
-        # Получение ответа ассистента
-        assistant_response = get_assistant_response(thread_id)
-        if not assistant_response:
+            logger.error("Ответ ассистента не найден.")
             return "Произошла ошибка. Попробуйте снова."
-
-        return assistant_response
 
     except Exception as e:
         logger.error(f"Непредвиденная ошибка: {e}")
