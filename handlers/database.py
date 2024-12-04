@@ -99,17 +99,17 @@ def get_thread_history(thread_id):
     finally:
         session.close()
 
-# Функция очистки неактивных тредов и сообщений
 def delete_inactive_threads():
     session = Session()
     try:
         cutoff_time = datetime.utcnow() - timedelta(hours=24)
-        inactive_threads = session.query(ClientThread).filter(ClientThread.timestamp < cutoff_time).all()
+        logger.info(f"Начало удаления неактивных тредов. Время отсечения: {cutoff_time}")
         
+        inactive_threads = session.query(ClientThread).filter(ClientThread.timestamp < cutoff_time).all()
+        logger.info(f"Найдено {len(inactive_threads)} неактивных тредов для удаления.")
+
         for thread in inactive_threads:
-            # Удаляем все сообщения, связанные с тредом
             session.query(Message).filter_by(thread_id=thread.thread_id).delete()
-            # Удаляем сам тред
             session.delete(thread)
             logger.info(f"Удалён тред {thread.thread_id} и связанные сообщения")
         
