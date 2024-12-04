@@ -92,6 +92,11 @@ async def chat_with_assistant(sender_id, user_message, assistant_id):
         # Отправка сообщения пользователя
         send_message_to_thread(thread_id, user_message)
 
+        # Проверка ассистента
+        if not assistant_id or not assistant_id.startswith("asst_"):
+            logger.error(f"Некорректный assistant_id: {assistant_id}")
+            return "Произошла ошибка. Проверьте настройки ассистента."
+
         # Получение ответа ассистента
         assistant_response = get_assistant_response(thread_id, assistant_id)
         if not assistant_response:
@@ -102,6 +107,7 @@ async def chat_with_assistant(sender_id, user_message, assistant_id):
     except Exception as e:
         logger.error(f"Непредвиденная ошибка: {e}")
         return "Произошла непредвиденная ошибка."
+
 
 
 # Пример вызова
