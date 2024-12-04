@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Enum
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Enum, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session, relationship
 from config import DATABASE_URI
@@ -32,7 +32,7 @@ class Message(Base):
     user_id = Column(String(255), nullable=False)
     thread_id = Column(String(255), ForeignKey('client_threads.thread_id', ondelete="CASCADE"), nullable=False)
     role = Column(Enum('user', 'assistant', name='role_enum'), nullable=False)  # Роль отправителя
-    content = Column(String, nullable=False)  # Текст сообщения
+    content = Column(Text, nullable=False)  # Используем Text для длинных текстов
     timestamp = Column(DateTime, default=datetime.utcnow)  # Время отправки сообщения
     # Связь с тредом
     thread = relationship("ClientThread", back_populates="messages")
