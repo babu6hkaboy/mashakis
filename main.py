@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
-from tasks.scheduler import start_scheduler
-from multiprocessing import Process
+from tasks.scheduler import start_scheduler  # Импорт функции запуска планировщика
+from threading import Thread
 
 load_dotenv()
 
@@ -30,14 +30,15 @@ def webhook():
         handle_message(data)
         return 'EVENT_RECEIVED', 200
 
-def run_scheduler():
-    """Функция для запуска планировщика в отдельном процессе."""
-    start_scheduler()
+def run_app():
+    """Функция для запуска Flask-приложения."""
+    app.run(debug=True, use_reloader=False)  # Отключаем autoreload, чтобы избежать дублирования потоков
 
 if __name__ == '__main__':
-    # Запуск планировщика в отдельном процессе
-    scheduler_process = Process(target=run_scheduler)
-    scheduler_process.start()
+    # Запуск планировщика в отдельном потоке
+    scheduler_thread = Thread(target=start_scheduler)
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
 
     # Запуск Flask-приложения
-    app.run(debug=True)
+    run_app()
