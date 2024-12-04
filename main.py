@@ -1,9 +1,9 @@
 from flask import Flask, request
 from dotenv import load_dotenv
 import os
+from tasks.scheduler import start_scheduler  # Импорт планировщика
 from handlers.message_handler import handle_message
 from utils.logger import logger
-from tasks.scheduler import start_scheduler  # Импортируем функцию запуска планировщика
 
 load_dotenv()
 
@@ -29,7 +29,18 @@ def webhook():
         handle_message(data)
         return 'EVENT_RECEIVED', 200
 
-if __name__ == '__main__':
-    logger.info("Запуск приложения Flask с планировщиком.")
+
+def run_app_with_scheduler():
+    """Функция для запуска Flask и планировщика."""
+    logger.info("Запуск Flask-приложения и планировщика.")
     scheduler = start_scheduler()  # Запуск планировщика
-    app.run(debug=True, use_reloader=False)  # use_reloader=False для предотвращения дублирования
+    try:
+        app.run(host="0.0.0.0", port=8000)  # Запуск Flask-приложения
+    except KeyboardInterrupt:
+        logger.info("Остановка приложения.")
+    finally:
+        scheduler.shutdown()  # Останавливаем планировщик при завершении приложения
+
+
+if __name__ == '__main__':
+    run_app_with_scheduler()

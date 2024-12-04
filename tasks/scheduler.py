@@ -9,5 +9,5 @@ def start_scheduler():
     scheduler = BackgroundScheduler(timezone=timezone('UTC'))
     scheduler.add_job(delete_inactive_threads, 'interval', minutes=1)
     scheduler.start()
-    logger.info("Фоновый планировщик запущен.")
+    logger.info("Планировщик успешно запущен.")
     return scheduler
