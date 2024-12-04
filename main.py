@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
+from tasks.scheduler import start_scheduler  # Импорт функции запуска планировщика
 
 load_dotenv()
 
@@ -29,4 +30,8 @@ def webhook():
         return 'EVENT_RECEIVED', 200
 
 if __name__ == '__main__':
+    # Запуск планировщика
+    start_scheduler()
+
+    # Запуск Flask-приложения
     app.run(debug=True)
