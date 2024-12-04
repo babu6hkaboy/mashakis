@@ -103,38 +103,46 @@ async def chat_with_assistant(sender_id, user_message):
         )
         logger.info(f"Добавлено сообщение пользователя в thread_id={thread_id}: {user_message}")
 
-        # Запуск выполнения ассистента
-        run = client.beta.threads.runs.create(
-            thread_id=thread_id,
-            assistant_id=ASSISTANT_ID,
-        )
-        logger.info(f"Запущен Run: {run.id}")
+        for attempt in range(2):  # Две попытки выполнения
+            logger.info(f"Попытка запуска Run: {attempt + 1}")
+            
+            # Запуск выполнения ассистента
+            run = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=ASSISTANT_ID,
+            )
+            logger.info(f"Запущен Run: {run.id}")
 
-        # Ожидание завершения выполнения
-        while True:
-            run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
-            logger.info(f"Статус выполнения Run: {run_status.status}")
+            # Ожидание завершения выполнения
+            while True:
+                run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                logger.info(f"Статус выполнения Run: {run_status.status}")
+
+                if run_status.status == "completed":
+                    # Успех, прерываем цикл
+                    logger.info("Run завершён успешно.")
+                    break
+                elif run_status.status == "failed":
+                    logger.error(f"Попытка {attempt + 1} завершилась неудачей.")
+                    break
+                else:
+                    time.sleep(2)
 
             if run_status.status == "completed":
-                break
-            elif run_status.status == "failed":
-                logger.error("Ошибка выполнения Run.")
-                return "Произошла ошибка. Попробуйте снова."
-            else:
-                time.sleep(2)
+                # Если успешная попытка, извлекаем ответ
+                messages = client.beta.threads.messages.list(thread_id=thread_id)
+                assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
+                if assistant_message:
+                    assistant_reply = assistant_message.content[0].text.value
+                    save_message(thread_id, sender_id, "assistant", assistant_reply)  # Сохраняем ответ ассистента
+                    return assistant_reply
+                else:
+                    logger.error("Ответ ассистента не найден.")
+                    return "Произошла ошибка. Попробуйте снова."
 
-        # Извлекаем последний ответ ассистента
-        messages = client.beta.threads.messages.list(thread_id=thread_id)
-        assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
-        if assistant_message:
-            assistant_reply = assistant_message.content[0].text.value
-            save_message(thread_id, sender_id, "assistant", assistant_reply)  # Сохраняем ответ ассистента
-            return assistant_reply
-        else:
-            logger.error("Ответ ассистента не найден.")
-            return "Произошла ошибка. Попробуйте снова."
+        # Если обе попытки завершились неудачей
+        return "Произошла ошибка. Попробуйте снова позже."
 
     except Exception as e:
         logger.error(f"Непредвиденная ошибка: {e}")
         return "Произошла непредвиденная ошибка."
-
