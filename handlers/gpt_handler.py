@@ -95,17 +95,22 @@ async def chat_with_assistant(sender_id, user_message):
         # Сохраняем сообщение пользователя
         save_message(thread_id, sender_id, "user", user_message)
 
-        # Извлекаем историю сообщений
-        thread_history = get_thread_history(thread_id)
+        # Отправка сообщения пользователя в тред
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=user_message,
+        )
+        logger.info(f"Добавлено сообщение пользователя в thread_id={thread_id}: {user_message}")
 
-        # Отправка истории и получение ответа
+        # Запуск выполнения ассистента
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
             assistant_id=ASSISTANT_ID,
-            messages=thread_history,
         )
         logger.info(f"Запущен Run: {run.id}")
 
+        # Ожидание завершения выполнения
         while True:
             run_status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
             logger.info(f"Статус выполнения Run: {run_status.status}")
@@ -132,3 +137,4 @@ async def chat_with_assistant(sender_id, user_message):
     except Exception as e:
         logger.error(f"Непредвиденная ошибка: {e}")
         return "Произошла непредвиденная ошибка."
+
