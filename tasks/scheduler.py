@@ -7,7 +7,7 @@ def start_scheduler():
     """Запуск планировщика."""
     logger.info("Инициализация планировщика.")
     scheduler = BackgroundScheduler(timezone=timezone('UTC'))
-    scheduler.add_job(delete_inactive_threads, 'interval', minutes=1)
+    scheduler.add_job(delete_inactive_threads, 'interval', hours=6)  # Интервал 6 часов
     scheduler.start()
     logger.info("Планировщик успешно запущен.")
     return scheduler
