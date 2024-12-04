@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 import os
 from handlers.message_handler import handle_message
 from utils.logger import logger
-from tasks.scheduler import start_scheduler  # Импорт функции запуска планировщика
+from tasks.scheduler import start_scheduler
+from multiprocessing import Process
 
 load_dotenv()
 
@@ -29,9 +30,14 @@ def webhook():
         handle_message(data)
         return 'EVENT_RECEIVED', 200
 
-if __name__ == '__main__':
-    # Запуск планировщика
+def run_scheduler():
+    """Функция для запуска планировщика в отдельном процессе."""
     start_scheduler()
+
+if __name__ == '__main__':
+    # Запуск планировщика в отдельном процессе
+    scheduler_process = Process(target=run_scheduler)
+    scheduler_process.start()
 
     # Запуск Flask-приложения
     app.run(debug=True)
