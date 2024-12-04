@@ -23,7 +23,7 @@ def handle_message(data):
                 logger.info(f"Передача аргументов в chat_with_assistant: user_id={sender_id}, user_message={user_message}")
 
                 # Передаём client в функцию
-                assistant_reply = asyncio.run(chat_with_assistant(client, sender_id, user_message))
+                assistant_reply = asyncio.run(chat_with_assistant(sender_id, user_message))
 
                 # Логирование ответа ассистента
                 logger.info(f"Ответ ассистента: {assistant_reply}")
