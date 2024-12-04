@@ -102,9 +102,9 @@ def get_thread_history(thread_id):
 def delete_inactive_threads():
     session = Session()
     try:
-        cutoff_time = datetime.utcnow() - timedelta(hours=24)
+        cutoff_time = datetime.utcnow() - timedelta(minutes=1)  # Для теста используем 1 минуту
         logger.info(f"Начало удаления неактивных тредов. Время отсечения: {cutoff_time}")
-        
+
         inactive_threads = session.query(ClientThread).filter(ClientThread.timestamp < cutoff_time).all()
         logger.info(f"Найдено {len(inactive_threads)} неактивных тредов для удаления.")
 
@@ -119,6 +119,8 @@ def delete_inactive_threads():
         session.rollback()
     finally:
         session.close()
+        logger.info("Проверка на неактивные треды завершена.")
+
 
 # Создание таблиц в базе данных
 Base.metadata.create_all(engine)

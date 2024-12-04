@@ -39,6 +39,7 @@ if __name__ == '__main__':
     scheduler_thread = Thread(target=start_scheduler)
     scheduler_thread.daemon = True
     scheduler_thread.start()
+    logger.info("Планировщик запущен в отдельном потоке.")
 
     # Запуск Flask-приложения
     run_app()
