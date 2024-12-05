@@ -34,5 +34,6 @@ def webhook():
 scheduler = start_scheduler()
 logger.info("Планировщик запущен.")
 
+#shit
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
