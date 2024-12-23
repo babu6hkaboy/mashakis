@@ -19,13 +19,6 @@ if not PAGE_ACCESS_TOKEN:
     logger.error("PAGE_ACCESS_TOKEN не указан в .env файле")
     raise ValueError("PAGE_ACCESS_TOKEN должен быть определён")
 
-# Набор ключевых слов для проверки
-KEYWORDS = set([
-    "Please", "give", "minutes", "pass", "information", "manager", "thank", "beautiful",
-])
-
-# Минимальное количество совпадений для отправки уведомления
-MIN_MATCH_COUNT = 5
 
 def get_user_name(user_id):
     """Получение Имени и Фамилии пользователя из Facebook Messenger."""
@@ -45,49 +38,21 @@ def get_user_name(user_id):
         logger.error(f"Ошибка при получении имени пользователя: {e}")
         return "Неизвестный пользователь"
 
-def should_notify(response_text):
-    """Проверка, стоит ли отправлять уведомление в Telegram."""
-    if not isinstance(response_text, str):
-        logger.error(f"Некорректный формат текста ответа: {type(response_text)}. Ожидалась строка.")
-        return False
-
-    # Преобразуем текст ответа и ключевые слова в множества
-    response_words = set(response_text.lower().split())
-    # Считаем пересечение с ключевыми словами
-    match_count = len(response_words & KEYWORDS)
-    logger.info(f"Совпадение ключевых слов: {match_count} (необходимо: {MIN_MATCH_COUNT})")
-    return match_count >= MIN_MATCH_COUNT
 
 def send_telegram_notification_to_channel(user_id, message_text):
+    """Отправляет уведомление в Telegram канал."""
     try:
-        # Получение имени пользователя
-        user_name = get_user_name(user_id)  # Может вернуть "Неизвестный пользователь"
-        if not user_name:
-            logger.warning(f"Имя пользователя не найдено для user_id={user_id}. Используем значение по умолчанию.")
-            user_name = "Неизвестный пользователь"
-
-        # Формирование текста уведомления
+        user_name = get_user_name(user_id)
         text = f"Новое сообщение от пользователя {user_name}:\n{message_text}"
-        logger.info(f"Подготовка текста для Telegram уведомления: {text}")
-
-        # URL и данные для запроса
         url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
         data = {
             'chat_id': TG_CHANNEL_ID,
             'text': text
         }
-
-        # Логируем данные перед отправкой
-        logger.info(f"Отправка уведомления в Telegram канал: {data}")
-
-        # Выполняем запрос
         response = requests.post(url, json=data)
-
-        # Проверка ответа
         if response.status_code == 200:
             logger.info("Уведомление в Telegram канал успешно отправлено")
         else:
-            logger.error(f"Ошибка при отправке уведомления в Telegram канал: {response.status_code} - {response.text}")
-
+            logger.error(f"Ошибка при отправке уведомления: {response.status_code} - {response.text}")
     except Exception as e:
         logger.error(f"Ошибка при отправке уведомления в Telegram: {e}")

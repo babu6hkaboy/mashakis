@@ -7,17 +7,29 @@ import asyncio
 # Укажите Page Access Token напрямую
 PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO0g3vtw2ChMHdvTdWWi5Xi1TrdwPZAGIjKZBYSLKR4Mpp7dT4oWN7gZCDKwdYBkeNNSG9P5eZBn5t73mHVjjJ1yhgy4lURbLQZBVgp9B4ItgT2PpBkXSMIwTF42TsyQZB4pmZBnM6ZA4FXHjDtfMktIaXxObEG21I9bMXXbo9TMVhxckEH5cXtXx"
 
+# Множество обработанных идентификаторов сообщений
+processed_messages = set()
+
 def handle_message(data):
     try:
         for entry in data.get('entry', []):
             for messaging in entry.get('messaging', []):
                 sender_id = messaging['sender']['id']
+                message_id = messaging['message']['mid']
                 user_message = messaging['message'].get('text', '').strip()
+
+                # Проверка: сообщение уже обработано
+                if message_id in processed_messages:
+                    logger.info(f"Сообщение {message_id} уже обработано. Пропускаем.")
+                    continue
+
+                # Добавляем сообщение в обработанные
+                processed_messages.add(message_id)
 
                 # Проверка наличия текста
                 if not user_message:
                     logger.error(f"Пустое сообщение от пользователя {sender_id}. Пропускаем.")
-                    return
+                    continue
 
                 # Логирование перед вызовом
                 logger.info(f"Передача аргументов в chat_with_assistant: user_id={sender_id}, user_message={user_message}")
@@ -37,10 +49,7 @@ def handle_message(data):
                     assistant_reply_text = str(assistant_reply)
 
                 # Проверяем необходимость отправки уведомления в Telegram
-                trigger_words = {"please", "give", "manager", "information", "minutes"}
-                should_notify = any(word in assistant_reply_text.lower() for word in trigger_words)
-
-                if should_notify:
+                if should_notify(assistant_reply_text):
                     logger.info("Обнаружены триггерные слова в ответе ассистента. Отправляем уведомление в Telegram.")
                     try:
                         send_telegram_notification_to_channel(sender_id, user_message)
@@ -58,7 +67,6 @@ def handle_message(data):
                     logger.error(f"Ошибка при отправке ответа клиенту {sender_id}: {e}")
     except Exception as e:
         logger.error(f"Ошибка при обработке сообщения: {e}")
-
 
 
 def send_message(recipient_id, message_text):
@@ -84,7 +92,7 @@ def send_message(recipient_id, message_text):
         headers=headers,
         json=data
     )
-    logger.info(f"Отправка сообщения с данными: {data}")  # Отладочный вывод
+    logger.info(f"Отправка сообщения с данными: {data}")
     if response.status_code != 200:
         logger.error(f"Не удалось отправить сообщение: {response.status_code} - {response.text}")
     else:
@@ -92,12 +100,16 @@ def send_message(recipient_id, message_text):
     return response.json() if response.status_code == 200 else {"error": response.text}
 
 
-def is_important_message(message):
-    """Проверяет, содержит ли сообщение ключевые слова для отправки уведомления в Telegram."""
-    if not isinstance(message, str):
-        logger.error(f"Некорректный формат сообщения: {type(message)}. Ожидалась строка.")
+def should_notify(response_text):
+    """Проверка, стоит ли отправлять уведомление в Telegram."""
+    if not isinstance(response_text, str):
+        logger.error(f"Некорректный формат текста ответа: {type(response_text)}. Ожидалась строка.")
         return False
 
-    keywords = ["Please", "give", "minutes", "manager", "back", "possible"]  # Список ключевых слов
-    found_keywords = [word for word in keywords if word.lower() in message.lower()]
-    return len(found_keywords) >= 3  # Минимум 3 ключевых слова
+    # Набор ключевых слов для проверки
+    trigger_words = {"please", "give", "manager", "information", "minutes"}
+    response_words = set(response_text.lower().split())
+    match_count = len(response_words & trigger_words)
+
+    logger.info(f"Совпадение ключевых слов: {match_count} (необходимо: 3)")
+    return match_count >= 3
