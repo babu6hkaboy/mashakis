@@ -5,7 +5,7 @@ from utils.logger import logger
 import asyncio
 
 # Укажите Page Access Token напрямую
-PAGE_ACCESS_TOKEN = "EAANHNDy9q1IBO0g3vtw2ChMHdvTdWWi5Xi1TrdwPZAGIjKZBYSLKR4Mpp7dT4oWN7gZCDKwdYBkeNNSG9P5eZBn5t73mHVjjJ1yhgy4lURbLQZBVgp9B4ItgT2PpBkXSMIwTF42TsyQZB4pmZBnM6ZA4FXHjDtfMktIaXxObEG21I9bMXXbo9TMVhxckEH5cXtXx"
+PAGE_ACCESS_TOKEN = "token"
 
 # Множество обработанных идентификаторов сообщений
 processed_messages = set()
